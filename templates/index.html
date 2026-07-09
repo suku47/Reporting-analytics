@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Traffic Analytics Viewer</title>
+  <link rel="icon" href="/static/img/logo.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <h1>
+      <img src="/static/img/logo.svg" alt="" width="20" height="20" style="vertical-align:middle;margin-right:6px;">
+      TRAFFIC <span>ANALYTICS</span>
+    </h1>
+    <div class="header-meta" id="headerMeta">Loading...</div>
+  <span style="position:absolute;top:4px;left:4px;font-size:9px;color:#66738C;">v19</span></header>
+
+  <nav class="tabs">
+    <div class="tab active" onclick="switchTab('counts')" id="tab-counts">Vehicle Counts</div>
+    <div class="tab" onclick="switchTab('trajectory')">Trajectory Analysis</div>
+    <div class="tab" onclick="switchTab('nearmiss')">Near Miss</div>
+    <div class="tab" onclick="switchTab('tracks')">Tracks</div>
+    <div class="tab util" onclick="switchTab('batch')">Batch</div>
+  </nav>
+
+  <div class="main">
+    <!-- Scene view: static frame for gate drawing (no playback) -->
+
+
+    <div class="sidebar">
+      <div class="tab-content">
+        <!-- Dashboard -->
+        <div class="tab-panel" id="panel-dashboard" style="display:none!important;">
+          <div class="stat-grid" id="statGrid"></div>
+          <div class="section-header">Classification</div>
+          <div class="class-bar" id="classBar"></div>
+          <div class="class-legend" id="classLegend"></div>
+          <div class="section-header">Entry / Exit Flow</div>
+          <div id="flowChart" style="margin-bottom:12px;"></div>
+          <div class="section-header">Speed Distribution</div>
+          <canvas id="speedChart" height="120"></canvas>
+          
+
+        </div>
+
+        <!-- Trajectory Analysis -->
+        <div class="tab-panel" id="panel-trajectory">
+          <div class="panel-split">
+            <div class="panel-main" id="tjMain">
+              <div class="tj-empty" id="tjEmpty">Set the filters and click <b>Generate Trajectory Plot</b> — the plot renders here at full size.</div>
+<div id="tjStatus" style="font-size:11px;color:var(--text-muted);margin-top:6px;"></div>
+            <a id="tjLink" href="/api/trajectories/image" target="_blank" style="display:none;">
+              <img id="tjImg" style="width:100%;margin-top:8px;border:1px solid var(--border,#30363d);border-radius:6px;">
+            </a>
+          </div>
+        </div>
+            <aside class="panel-aside">
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            Draw every vehicle's path onto a clean background frame. Filter by
+            class, time window, or a gate-to-gate movement.
+          </div>
+<div >
+            <div style="font-weight:bold;font-size:13px;margin-bottom:6px;">TRAJECTORY PLOT</div>
+            <div style="display:flex;gap:8px;margin-bottom:6px;">
+              <input type="text" id="tjClasses" class="text-input" style="flex:2;" placeholder="Classes (blank = all), e.g. Car,Ped">
+              <input type="number" id="tjPerClass" class="text-input" style="flex:1;" placeholder="Max/class">
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
+              <select id="tjFromGate" class="text-input" style="flex:1;"><option value="">From gate (all)</option></select>
+              <span style="font-size:12px;">→</span>
+              <select id="tjToGate" class="text-input" style="flex:1;"><option value="">To gate (all)</option></select>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
+              <input type="text" id="tjFromTime" class="text-input" style="flex:1;" placeholder="From HH:MM (optional)">
+              <input type="text" id="tjToTime" class="text-input" style="flex:1;" placeholder="To HH:MM (optional)">
+            </div>
+            <label style="font-size:12px;display:flex;gap:6px;align-items:center;margin-bottom:6px;cursor:pointer;">
+              <input type="checkbox" id="tjLegend" checked> Legend
+              <input type="checkbox" id="tjSkipStat" checked style="margin-left:12px;"> Skip stationary
+            </label>
+            <button class="btn" style="width:100%;" onclick="generateTrajectoryPlot()" id="tjBtn">Generate Trajectory Plot</button>
+            </aside>
+          </div>
+        </div>
+
+        <!-- Near Miss -->
+        <div class="tab-panel" id="panel-nearmiss" style="max-width:760px;">
+          <div class="section-header">Near Miss Analysis</div>
+          <div style="background:var(--bg-card);border:1px dashed var(--border-strong);border-radius:10px;padding:28px;text-align:center;color:var(--text-secondary);">
+            <div style="font-size:28px;margin-bottom:8px;">⚠</div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;margin-bottom:6px;">Coming soon</div>
+            <div style="font-size:12.5px;max-width:420px;margin:0 auto;">
+              Conflict detection (PET/TTC) between vehicle, pedestrian and cycle
+              trajectories, with severity buckets and evidence clips.
+            </div>
+          </div>
+        </div>
+
+        <!-- Tracks -->
+        <div class="tab-panel" id="panel-tracks">
+          <div class="panel-split">
+            <div class="panel-main" id="tracksSceneSlot"></div>
+            <aside class="panel-aside">
+          <div class="filter-row" id="classFilters"></div>
+          <div class="filter-row">
+            <button class="filter-btn active" onclick="filterMotion('all')">All</button>
+            <button class="filter-btn" onclick="filterMotion('moving')">Moving</button>
+            <button class="filter-btn" onclick="filterMotion('stationary')">Stationary</button>
+          </div>
+          <div class="track-list" id="trackList">
+            <div class="loading">Loading tracks...</div>
+          </div>
+        </aside>
+          </div>
+        </div>
+
+        <style>
+  #panel-batch .field-label { display:block; font-size:11px; color:var(--text-muted,#8b949e); margin:4px 0 2px; }
+  #panel-batch .text-input { background:var(--bg-dark,#0d1117); color:var(--text,#c9d1d9);
+    border:1px solid var(--border,#30363d); border-radius:4px; padding:4px 6px; font-size:12px; }
+</style>
+
+        <!-- Batch Report -->
+        <div class="tab-panel" id="panel-batch">
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">
+            Run the whole site extraction: copy this file's gates to every .traf,
+            recompute crossings, and produce merged workbooks + client template with QA.
+          </div>
+          <label class="field-label">Site config YAML path</label>
+          <div style="display:flex;gap:6px;margin-bottom:8px;">
+            <input type="text" id="bCfgPath" class="text-input" style="flex:1;" placeholder="E:/jobs/site42.yaml">
+            <button class="btn btn-sm" onclick="batchLoadConfig()">Load</button>
+          </div>
+          <label class="field-label">Site label</label>
+          <input type="text" id="bSite" class="text-input" style="width:100%;margin-bottom:6px;">
+          <label class="field-label">Traf folder</label>
+          <input type="text" id="bTrafDir" class="text-input" style="width:100%;margin-bottom:6px;">
+          <label class="field-label">Output folder</label>
+          <input type="text" id="bOut" class="text-input" style="width:100%;margin-bottom:6px;">
+          <label class="field-label">Schedule xlsx (optional, for QA)</label>
+          <input type="text" id="bSchedule" class="text-input" style="width:100%;margin-bottom:6px;">
+          <div style="display:flex;gap:8px;margin-bottom:6px;">
+            <div style="flex:1;">
+              <label class="field-label">Bin (min)</label>
+              <select id="bBin" class="text-input" style="width:100%;">
+                <option>5</option><option selected>15</option><option>30</option><option>60</option>
+              </select>
+            </div>
+            <div style="flex:2;">
+              <label class="field-label">Periods (comma sep, blank = full)</label>
+              <input type="text" id="bPeriods" class="text-input" style="width:100%;" placeholder="08:00-10:00, 15:00-17:00">
+            </div>
+          </div>
+          <label class="field-label">Client template (.xlsm, optional)</label>
+          <div style="display:flex;gap:6px;margin-bottom:6px;">
+            <input type="text" id="bTemplate" class="text-input" style="flex:1;">
+            <button class="btn btn-sm" onclick="batchReadTemplate()">Read</button>
+          </div>
+          <label class="field-label">Client site number (auto movements)</label>
+          <input type="text" id="bSiteNum" class="text-input" style="width:100%;margin-bottom:6px;" placeholder="59">
+          <label class="field-label">Set all template dates to (YYYY-MM-DD, blank = keep as-is)</label>
+          <input type="text" id="bTplDate" class="text-input" style="width:100%;margin-bottom:6px;" placeholder="2026-04-28">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:6px;cursor:pointer;">
+            <input type="checkbox" id="bIgnoreDates">
+            Ignore template dates (match by time-of-day only)
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:4px;cursor:pointer;">
+            <input type="checkbox" id="bTrajPlots">
+            Generate trajectory plots (one per period, merged across files)
+          </label>
+          <input type="text" id="bBgVideo" class="text-input" style="width:100%;margin-bottom:6px;" placeholder="Background video (blank = first video in schedule)">
+          <div id="bClassMap" style="margin-bottom:8px;"></div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn" style="flex:1;" onclick="batchSaveConfig()">Save YAML</button>
+            <button class="btn" style="flex:1;background:var(--accent,#238636);color:#fff;" onclick="batchRun()" id="bRunBtn">▶ Run</button>
+          </div>
+          <div id="bLog" style="margin-top:10px;font-family:monospace;font-size:11px;white-space:pre-wrap;max-height:260px;overflow-y:auto;background:var(--bg-dark,#0d1117);border:1px solid var(--border,#30363d);border-radius:6px;padding:8px;display:none;"></div>
+          <div id="bOutputs" style="margin-top:8px;"></div>
+        </div>
+
+        <!-- Gates -->
+        <div class="tab-panel active" id="panel-counts">
+          <div class="panel-split cols-4">
+            <div class="panel-main" id="countsSceneSlot"></div>
+            <aside class="panel-aside">
+          <div style="display:flex;gap:4px;margin-bottom:8px;">
+            <button class="btn" onclick="startDrawGate()" id="btnDrawGate" style="flex:1;">
+              + Draw New Gate
+            </button>
+            <button class="btn btn-sm" onclick="cancelDrawGate()" style="color:var(--text-muted);">Cancel</button>
+          </div>
+          <div id="gateList"></div>
+
+          <!-- Movement Definitions -->
+          <div id="movementSection" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+            </aside>
+            <aside class="panel-aside">
+<div class="section-header">DEFINE MOVEMENTS</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">
+              Select From → To gate pairs to count directional flows.
+            </div>
+            <div style="display:flex;gap:4px;margin-bottom:8px;align-items:center;">
+              <select id="movFrom" style="flex:1;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:4px 6px;border-radius:3px;font-size:12px;">
+              </select>
+              <span style="color:var(--text-muted);font-size:12px;">→</span>
+              <select id="movTo" style="flex:1;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:4px 6px;border-radius:3px;font-size:12px;">
+              </select>
+              <button class="btn btn-sm" onclick="addMovement()" style="white-space:nowrap;">+ Add</button>
+            </div>
+            <button class="btn btn-sm" onclick="addAllMovements()" style="width:100%;margin-bottom:8px;font-size:11px;">
+              Add All Possible Movements
+            </button>
+            <div id="movementList"></div>
+          </div>
+
+          <!-- Export -->
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+            </aside>
+            <aside class="panel-aside">
+<div class="section-header">EXPORT</div>
+            <div style="margin-bottom:8px;">
+              <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">Time Interval</label>
+              <div style="display:flex;gap:3px;" id="binBtnGroup">
+                <button class="btn btn-sm bin-btn" data-bin="1" onclick="setBinMinutes(1)" style="flex:1;font-size:10px;">1m</button>
+                <button class="btn btn-sm bin-btn" data-bin="5" onclick="setBinMinutes(5)" style="flex:1;font-size:10px;">5m</button>
+                <button class="btn btn-sm bin-btn" data-bin="15" onclick="setBinMinutes(15)" style="flex:1;font-size:10px;background:var(--accent);color:#000;border-color:var(--accent);">15m</button>
+                <button class="btn btn-sm bin-btn" data-bin="30" onclick="setBinMinutes(30)" style="flex:1;font-size:10px;">30m</button>
+                <button class="btn btn-sm bin-btn" data-bin="60" onclick="setBinMinutes(60)" style="flex:1;font-size:10px;">60m</button>
+              </div>
+              <div id="timeRangeHint" style="font-size:10px;color:var(--text-muted);margin-top:4px;"></div>
+            </div>
+            <button class="btn" onclick="exportTimeBinnedExcel()" id="btnExportTimeBinned"
+                    style="width:100%;background:var(--green);color:#000;border-color:var(--green);font-weight:600;margin-bottom:6px;">
+              Export Time-Binned Excel
+            </button>
+            <button class="btn btn-sm" onclick="exportMovementExcel()" id="btnExport"
+                    style="width:100%;font-size:11px;color:var(--text-secondary);">
+              Export Totals Only
+            </button>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="tab-panel" id="panel-filters" style="display:none!important;">
+          <div class="section-header">TRAJECTORY SMOOTHING</div>
+          <div style="display:flex;gap:4px;margin-bottom:12px;">
+            <button class="btn" onclick="smoothTrajectories(3)" style="flex:1">Light</button>
+            <button class="btn" onclick="smoothTrajectories(5)" style="flex:1">Medium</button>
+            <button class="btn" onclick="smoothTrajectories(9)" style="flex:1">Heavy</button>
+          </div>
+
+          <div class="section-header">AUTO-FILTER BAD TRACKS</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">
+            Preview which tracks would be removed, then confirm.
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
+            <label style="font-size:11px;display:flex;align-items:center;gap:6px;">
+              <span style="min-width:130px;">Min displacement (px)</span>
+              <input type="number" id="fMinDisp" value="40" style="width:60px;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:2px 6px;border-radius:3px;">
+            </label>
+            <label style="font-size:11px;display:flex;align-items:center;gap:6px;">
+              <span style="min-width:130px;">Min frames</span>
+              <input type="number" id="fMinFrames" value="10" style="width:60px;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:2px 6px;border-radius:3px;">
+            </label>
+            <label style="font-size:11px;display:flex;align-items:center;gap:6px;">
+              <span style="min-width:130px;">Max sinuosity</span>
+              <input type="number" id="fMaxSin" value="5.0" step="0.5" style="width:60px;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:2px 6px;border-radius:3px;">
+            </label>
+            <label style="font-size:11px;display:flex;align-items:center;gap:6px;">
+              <span style="min-width:130px;">Max jitter (rad)</span>
+              <input type="number" id="fMaxJitter" value="1.2" step="0.1" style="width:60px;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:2px 6px;border-radius:3px;">
+            </label>
+            <label style="font-size:11px;display:flex;align-items:center;gap:6px;">
+              <input type="checkbox" id="fEdgeOnly" checked>
+              Remove edge-only tracks
+            </label>
+            <label style="font-size:11px;display:flex;align-items:center;gap:6px;">
+              <input type="checkbox" id="fGateRequired">
+              Require gate crossing
+            </label>
+          </div>
+
+          <button class="btn" onclick="previewFilter()" style="width:100%;margin-bottom:6px;">
+            🔍 Preview Filter Results
+          </button>
+          <div id="filterPreview" style="font-size:11px;margin-bottom:8px;"></div>
+          <button class="btn" onclick="applyFilterDelete()" id="btnDeleteFiltered"
+                  style="width:100%;color:var(--red);border-color:var(--red);display:none;">
+            🗑 Delete Filtered Tracks
+          </button>
+
+          <div class="section-header" style="margin-top:16px;">MANUAL REMOVAL</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;">
+            Select a track in the TRACKS tab, then click below.
+          </div>
+          <button class="btn" onclick="deleteSelectedTrack()"
+                  style="width:100%;color:var(--red);border-color:var(--red);">
+            🗑 Delete Selected Track
+          </button>
+
+          <!-- Trajectory Trimming -->
+          <div class="section-header" style="margin-top:16px;">TRIM JITTERY ENDS</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">
+            Remove zigzag/jittery portions from trajectory ends while keeping the clean middle.
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
+            <label style="font-size:11px;display:flex;align-items:center;gap:6px;">
+              <span style="min-width:130px;">Jitter threshold (rad)</span>
+              <input type="number" id="fTrimThreshold" value="1.0" step="0.1" min="0.3" max="2.5"
+                     style="width:60px;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:2px 6px;border-radius:3px;">
+            </label>
+            <label style="font-size:11px;display:flex;align-items:center;gap:6px;">
+              <span style="min-width:130px;">Min clean segment pts</span>
+              <input type="number" id="fTrimMinClean" value="5" min="3" max="20"
+                     style="width:60px;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);padding:2px 6px;border-radius:3px;">
+            </label>
+          </div>
+          <button class="btn" onclick="previewTrimJitter()" style="width:100%;margin-bottom:6px;">
+            ✂ Preview Trim Results
+          </button>
+          <div id="trimPreview" style="font-size:11px;margin-bottom:8px;"></div>
+          <button class="btn" onclick="applyTrimJitter()" id="btnApplyTrim"
+                  style="width:100%;color:var(--yellow);border-color:var(--yellow);display:none;">
+            ✂ Trim Jittery Ends
+          </button>
+
+          <!-- Per-track trim (when a track is selected) -->
+          <div id="selectedTrackTrim" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;">
+              Selected track jitter analysis:
+            </div>
+            <div id="trackTrimInfo" style="font-size:11px;"></div>
+            <button class="btn btn-sm" onclick="trimSelectedTrack()" id="btnTrimSelected"
+                    style="width:100%;margin-top:4px;color:var(--yellow);border-color:var(--yellow);display:none;">
+              ✂ Trim This Track
+            </button>
+          </div>
+        </aside>
+          </div>
+        </div>
+
+<div id="videoPanelHolder" style="display:none;">
+<div class="video-panel" id="videoPanel" >
+        <div class="canvas-container">
+          <canvas id="mainCanvas"></canvas>
+          <div class="draw-hint" id="drawHint">Click two points to draw a gate line</div>
+        </div>
+        <div class="controls">
+          <input type="range" id="frameSlider" min="0" max="1000" value="0"
+                 oninput="seekFrame(this.value)" title="Choose a frame — no playback">
+          <span class="frame-label" id="frameLabel">Frame 0 / 0</span>
+          <div style="display:flex;gap:4px;">
+            <button class="btn btn-sm active" onclick="setOverlay('tracks')" id="btnTracks">Tracks</button>
+            <button class="btn btn-sm" onclick="setOverlay('heatmap')" id="btnHeatmap">Heatmap</button>
+            <button class="btn btn-sm" onclick="setOverlay('gates')" id="btnGates">Gates</button>
+            <button class="btn btn-sm" onclick="exportCanvasImage()" title="Save current view as image">📷</button>
+          </div>
+        </div>
+      </div>
+</div>
+
+<script src="/static/js/app.js?v=19"></script>
+<script src="/static/js/canvas.js?v=19"></script>
+<script src="/static/js/dashboard.js?v=19"></script>
+<script src="/static/js/tracks.js?v=19"></script>
+<script src="/static/js/gates.js?v=19"></script>
+<script src="/static/js/filters.js?v=19"></script>
+<script src="/static/js/batch.js?v=19"></script>
+<script src="/static/js/trajectories.js?v=19"></script>
+<script>
+  // The frame canvas exists once and moves into whichever tab needs it.
+  function placeVideoPanel(name) {
+    var vp = document.getElementById('videoPanel');
+    if (!vp) return;
+    var slot = name === 'counts' ? 'countsSceneSlot'
+             : name === 'tracks' ? 'tracksSceneSlot' : null;
+    if (slot) {
+      document.getElementById(slot).appendChild(vp);
+      vp.style.display = 'block';
+      if (typeof render === 'function') setTimeout(render, 60);
+    } else {
+      document.getElementById('videoPanelHolder').appendChild(vp);
+    }
+  }
+  var _origSwitchTab = switchTab;
+  switchTab = function(name) {
+    _origSwitchTab(name);
+    placeVideoPanel(name);
+    // Tracks tab is for visualising tracks only — no gates there
+    var gBtn = document.getElementById('btnGates');
+    if (gBtn) gBtn.style.display = (name === 'tracks') ? 'none' : '';
+    window.hideGatesOverlay = (name === 'tracks');
+    if (typeof render === 'function') setTimeout(render, 80);
+    if (name === 'trajectory' && typeof tjLoadGates === 'function') tjLoadGates();
+    // First visit to the tab: auto-render a preview (never saved to disk)
+    if (name === 'trajectory' && !window.tjAutoRan) {
+      window.tjAutoRan = true;
+      setTimeout(function() {
+        if (typeof generateTrajectoryPlot === 'function') generateTrajectoryPlot(true);
+      }, 400);
+    }
+  };
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() { placeVideoPanel('counts'); }, 300);
+    // Single-frame world: the scrubber adds nothing — hide it everywhere
+    setTimeout(function() {
+      ['frameSlider','frameLabel'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+    }, 500);
+    // Belt & braces: force the stored-background frame + trail render,
+    // regardless of which app.js version the browser cached.
+    setTimeout(function() {
+      try {
+        if (typeof loadFrame === 'function') {
+          var p = loadFrame(0);
+          if (p && p.then) p.then(function() { if (typeof render === 'function') render(); });
+        }
+      } catch (e) { console.warn('frame force-load:', e); }
+    }, 1200);
+    setTimeout(function() { if (typeof render === 'function') render(); }, 2600);
+  });
+</script>
+
+<script>
+  // Vehicle Counts layout v5: frame | gates | movements+export | defined list
+  document.addEventListener('DOMContentLoaded', function() {
+    try {
+      var panel = document.getElementById('panel-counts');
+      var split = panel.querySelector('.panel-split');
+      if (!split) return;
+      split.classList.add('cols-4');
+      var ml = document.getElementById('movementList');
+      var mv = ml ? ml.closest('aside') : null;
+      var exBtn = panel.querySelector('[onclick*="exportMovementExcel"]');
+      var ex = exBtn ? exBtn.closest('aside') : null;
+      if (!ex && exBtn) {
+        // export landed outside any aside: take its top-level container
+        ex = exBtn.parentElement;
+        while (ex && ex.parentElement !== panel && ex.parentElement !== split)
+          ex = ex.parentElement;
+      }
+      if (mv && ex && ex !== mv) {
+        var spacer = document.createElement('div');
+        spacer.style.marginTop = '14px';
+        mv.appendChild(spacer);
+        while (ex.firstChild) mv.appendChild(ex.firstChild);
+        ex.remove();
+      }
+      if (mv && split && !split.contains(mv)) split.appendChild(mv);
+      if (ml) {
+        var a4 = document.createElement('aside');
+        a4.className = 'panel-aside';
+        var hdr = document.createElement('div');
+        hdr.className = 'section-header';
+        hdr.textContent = 'Movements Defined';
+        a4.appendChild(hdr);
+        a4.appendChild(ml);
+        split.appendChild(a4);
+      }
+      // gates column first (leftmost), frame second
+      var drawBtn = panel.querySelector('[onclick*="startDrawGate"]');
+      var gatesAside = drawBtn ? drawBtn.closest('aside') : null;
+      if (gatesAside) split.insertBefore(gatesAside, split.firstElementChild);
+      // remove empty leftover divs that render as stray lines
+      panel.querySelectorAll('div').forEach(function(d) {
+        if (!d.textContent.trim() && !d.children.length && d.id === '' &&
+            (d.getAttribute('style') || '').indexOf('border') !== -1) d.remove();
+      });
+      console.log('counts layout v6 applied');
+      // Trajectory tab: same treatment — plot main-stage, controls beside it
+      var tp = document.getElementById('panel-trajectory');
+      if (tp) {
+        var tsplit = tp.querySelector('.panel-split');
+        if (!tsplit) {
+          tsplit = document.createElement('div');
+          tsplit.className = 'panel-split';
+          tp.insertBefore(tsplit, tp.firstChild);
+        }
+        var tmain = document.getElementById('tjMain');
+        if (!tmain) {
+          tmain = document.createElement('div');
+          tmain.className = 'panel-main'; tmain.id = 'tjMain';
+          ['tjEmpty','tjStatus','tjLink'].forEach(function(id){
+            var el = document.getElementById(id);
+            if (el) tmain.appendChild(el);
+          });
+        }
+        if (!tsplit.contains(tmain)) tsplit.insertBefore(tmain, tsplit.firstChild);
+        var tbtn = document.getElementById('tjBtn');
+        if (tbtn) {
+          var ctrl = tbtn.closest('aside');
+          if (!ctrl) {
+            ctrl = document.createElement('aside');
+            ctrl.className = 'panel-aside';
+            var box = tbtn.parentElement;
+            while (box && box.parentElement !== tp && box.parentElement !== tsplit)
+              box = box.parentElement;
+            if (box && box !== tsplit && box !== tmain) { tsplit.appendChild(ctrl); ctrl.appendChild(box); }
+          } else if (!tsplit.contains(ctrl)) tsplit.appendChild(ctrl);
+        }
+        console.log('trajectory layout v7 applied');
+      }
+    } catch (e) { console.warn('layout arrange:', e); }
+  });
+</script>
+</body>
+</html>
