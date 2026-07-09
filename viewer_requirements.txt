@@ -1,0 +1,18 @@
+#################################################################
+# Traffic Analytics Viewer — ADD-ON to Vehicle Tracking AI env
+# Install into the SAME vehicle_tracking_env:
+#     pip install -r viewer_requirements.txt
+#
+# Adds ONLY the web-server layer. The viewer's other dependencies
+# (numpy, pandas, openpyxl, PyYAML, opencv-python) are already
+# satisfied by the pinned pipeline requirements — nothing existing
+# is upgraded, downgraded, or touched. Stage-1 processing
+# (torch / TensorRT / ultralytics / boxmot) is unaffected.
+#################################################################
+
+# -------------------------------
+# Web server (viewer only)
+# -------------------------------
+fastapi==0.139.0
+uvicorn[standard]==0.51.0
+python-multipart==0.0.32
