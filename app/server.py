@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import sys
 
-from app.api import scene, tracks, gates, video, analytics, export, filters, batch, trajectories
+from app.api import scene, tracks, gates, video, analytics, export, filters, batch, trajectories, nearmiss
 
 # Re-export for run.py convenience
 from app.core.database import load_traf, load_video, load_image  # noqa: F401
@@ -43,6 +43,7 @@ app.include_router(export.router, prefix="/api")
 app.include_router(filters.router, prefix="/api")
 app.include_router(batch.router, prefix="/api")
 app.include_router(trajectories.router, prefix="/api")
+app.include_router(nearmiss.router, prefix="/api")
 
 # ── Static files ──
 BASE_DIR = _get_base_dir()
