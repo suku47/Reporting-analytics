@@ -16,3 +16,6 @@
 fastapi==0.139.0
 uvicorn[standard]==0.51.0
 python-multipart==0.0.32
+
+# Near-miss clip encoding (H.264, browser-playable) — bundles its own ffmpeg
+imageio-ffmpeg==0.5.1

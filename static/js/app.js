@@ -89,7 +89,7 @@ function switchTab(name) {
 // ── Overlay Toggle ──
 function setOverlay(mode) {
   overlayMode = mode;
-  ['btnTracks','btnHeatmap','btnGates'].forEach(function(id) {
+  ['btnTracks','btnHeatmap'].forEach(function(id) {
     document.getElementById(id).classList.remove('active');
   });
   document.getElementById('btn' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');

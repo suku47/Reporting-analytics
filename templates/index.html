@@ -6,17 +6,17 @@
   <title>Traffic Analytics Viewer</title>
   <link rel="icon" href="/static/img/logo.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="stylesheet" href="/static/css/main.css?v=33">
 </head>
 <body>
 <div class="app">
   <header class="header">
-    <h1>
+    <h1 title="build v36">
       <img src="/static/img/logo.svg" alt="" width="20" height="20" style="vertical-align:middle;margin-right:6px;">
       TRAFFIC <span>ANALYTICS</span>
     </h1>
     <div class="header-meta" id="headerMeta">Loading...</div>
-  <span style="position:absolute;top:4px;left:4px;font-size:9px;color:#66738C;">v20</span></header>
+  </header>
 
   <nav class="tabs">
     <div class="tab active" onclick="switchTab('counts')" id="tab-counts">Vehicle Counts</div>
@@ -55,18 +55,15 @@
             <a id="tjLink" href="/api/trajectories/image" target="_blank" style="display:none;">
               <img id="tjImg" style="width:100%;margin-top:8px;border:1px solid var(--border,#30363d);border-radius:6px;">
             </a>
-          </div>
-        </div>
+            </div>
             <aside class="panel-aside">
           <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
             Draw every vehicle's path onto a clean background frame. Filter by
             class, time window, or a gate-to-gate movement.
           </div>
-<div >
             <div style="font-weight:bold;font-size:13px;margin-bottom:6px;">TRAJECTORY PLOT</div>
             <div style="display:flex;gap:8px;margin-bottom:6px;">
-              <input type="text" id="tjClasses" class="text-input" style="flex:2;" placeholder="Classes (blank = all), e.g. Car,Ped">
-              <input type="number" id="tjPerClass" class="text-input" style="flex:1;" placeholder="Max/class">
+              <input type="text" id="tjClasses" class="text-input" style="flex:1;" placeholder="Classes (blank = all), e.g. Car,Ped">
             </div>
             <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
               <select id="tjFromGate" class="text-input" style="flex:1;"><option value="">From gate (all)</option></select>
@@ -87,16 +84,8 @@
         </div>
 
         <!-- Near Miss -->
-        <div class="tab-panel" id="panel-nearmiss" style="max-width:760px;">
-          <div class="section-header">Near Miss Analysis</div>
-          <div style="background:var(--bg-card);border:1px dashed var(--border-strong);border-radius:10px;padding:28px;text-align:center;color:var(--text-secondary);">
-            <div style="font-size:28px;margin-bottom:8px;">⚠</div>
-            <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;margin-bottom:6px;">Coming soon</div>
-            <div style="font-size:12.5px;max-width:420px;margin:0 auto;">
-              Conflict detection (PET/TTC) between vehicle, pedestrian and cycle
-              trajectories, with severity buckets and evidence clips.
-            </div>
-          </div>
+        <div class="tab-panel" id="panel-nearmiss">
+          <div class="loading">Loading near miss panel…</div>
         </div>
 
         <!-- Tracks -->
@@ -356,22 +345,59 @@
           <div style="display:flex;gap:4px;">
             <button class="btn btn-sm active" onclick="setOverlay('tracks')" id="btnTracks">Tracks</button>
             <button class="btn btn-sm" onclick="setOverlay('heatmap')" id="btnHeatmap">Heatmap</button>
-            <button class="btn btn-sm" onclick="setOverlay('gates')" id="btnGates">Gates</button>
             <button class="btn btn-sm" onclick="exportCanvasImage()" title="Save current view as image">📷</button>
           </div>
         </div>
       </div>
 </div>
 
-<script src="/static/js/app.js?v=20"></script>
-<script src="/static/js/canvas.js?v=20"></script>
+<footer class="app-footer">
+  <div class="footer-main">
+    <div class="footer-brand">
+      <div class="footer-logo-card">
+        <img src="/static/img/company_logo.png" alt="Accurate Traffic Data">
+      </div>
+      <div class="footer-tagline">Video-based traffic analytics — counts,
+        trajectories and conflict analysis from a single recording.</div>
+      <a class="footer-site" href="https://www.accuratetrafficdata.com"
+         target="_blank" rel="noopener">www.accuratetrafficdata.com</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Analysis</div>
+      <a onclick="switchTab('counts')">Vehicle counts &amp; TMC</a>
+      <a onclick="switchTab('trajectory')">Trajectory analysis</a>
+      <a onclick="switchTab('nearmiss')">Near-miss conflicts</a>
+      <a onclick="switchTab('tracks')">Track review</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Deliverables</div>
+      <span>Time-binned TMC workbooks</span>
+      <span>Client report templates</span>
+      <span>Trajectory &amp; flow plots</span>
+      <span>Conflict evidence clips</span>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Company</div>
+      <a href="https://www.accuratetrafficdata.com" target="_blank" rel="noopener">About us</a>
+      <a href="https://www.accuratetrafficdata.com" target="_blank" rel="noopener">Contact</a>
+      <span class="footer-ite">Meet us at ITE Annual Meeting<br>Detroit, 2026</span>
+    </div>
+  </div>
+  <div class="footer-base">
+    <span>&copy; 2026 Accurate Traffic Data. All rights reserved.</span>
+    <span class="footer-build" title="deployment check">build v36</span>
+  </div>
+</footer>
+
+<script src="/static/js/app.js?v=21"></script>
+<script src="/static/js/canvas.js?v=21"></script>
 <script src="/static/js/dashboard.js?v=20"></script>
 <script src="/static/js/tracks.js?v=20"></script>
 <script src="/static/js/gates.js?v=20"></script>
 <script src="/static/js/filters.js?v=20"></script>
 <script src="/static/js/batch.js?v=20"></script>
-<script src="/static/js/trajectories.js?v=20"></script>
-<script src="/static/js/nearmiss.js?v=20"></script>
+<script src="/static/js/trajectories.js?v=23"></script>
+<script src="/static/js/nearmiss.js?v=25"></script>
 <script>
   // The frame canvas exists once and moves into whichever tab needs it.
   function placeVideoPanel(name) {
@@ -391,9 +417,7 @@
   switchTab = function(name) {
     _origSwitchTab(name);
     placeVideoPanel(name);
-    // Tracks tab is for visualising tracks only — no gates there
-    var gBtn = document.getElementById('btnGates');
-    if (gBtn) gBtn.style.display = (name === 'tracks') ? 'none' : '';
+    // Tracks tab is for visualising tracks only — no gate overlays there
     window.hideGatesOverlay = (name === 'tracks');
     if (typeof render === 'function') setTimeout(render, 80);
     if (name === 'trajectory' && typeof tjLoadGates === 'function') tjLoadGates();

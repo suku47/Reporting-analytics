@@ -1,4 +1,4 @@
-console.log('trajectories.js v18 loaded');
+console.log('trajectories.js v21 loaded');
 // ── Trajectory Plot panel ──
 async function generateTrajectoryPlot(autoPreview) {
   try {
@@ -21,14 +21,15 @@ async function _generatePlotInner(autoPreview) {
       legend: document.getElementById('tjLegend').checked,
       skip_stationary: document.getElementById('tjSkipStat').checked
     };
-    var picked = Object.keys(window.tjSelectedClasses || {}).filter(function(k){ return window.tjSelectedClasses[k]; });
+    var picked = Array.prototype.map.call(
+      document.querySelectorAll('.tjClassChk:checked'),
+      function(cb) { return cb.value; });
     if (picked.length) payload.classes = picked;
     else {
-      var cls = document.getElementById('tjClasses').value.trim();
+      var clsEl = document.getElementById('tjClasses');
+      var cls = clsEl ? clsEl.value.trim() : '';
       if (cls) payload.classes = cls.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
     }
-    var pc = document.getElementById('tjPerClass').value.trim();
-    if (pc) payload.per_class = parseInt(pc, 10);
     var fg = document.getElementById('tjFromGate').value;
     var tg = document.getElementById('tjToGate').value;
     if (fg && tg) { payload.from_gate = fg; payload.to_gate = tg; }
@@ -73,59 +74,11 @@ async function _generatePlotInner(autoPreview) {
 }
 
 
-// Populate gate dropdowns whenever the panel is used
-window.tjSelectedClasses = {};
-
 async function tjBuildExtras() {
-  // Class pills auto-populated from the loaded .traf (replaces the text box)
-  var input = document.getElementById('tjClasses');
-  if (input && !document.getElementById('tjClassPills')) {
-    try {
-      var oc = await fetchJSON('/api/batch/our_classes');
-      var classes = oc.classes || [];
-      if (classes.length) {
-        input.style.display = 'none';
-        var box = document.createElement('div');
-        box.id = 'tjClassPills';
-        box.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;';
-        classes.forEach(function(c) {
-          var b = document.createElement('button');
-          b.className = 'filter-btn';
-          b.textContent = c;
-          b.onclick = function() {
-            window.tjSelectedClasses[c] = !window.tjSelectedClasses[c];
-            b.classList.toggle('active', !!window.tjSelectedClasses[c]);
-          };
-          box.appendChild(b);
-        });
-        var hint = document.createElement('div');
-        hint.style.cssText = 'font-size:10px;color:var(--text-muted);width:100%;';
-        hint.textContent = 'None selected = all classes';
-        box.appendChild(hint);
-        input.parentElement.insertBefore(box, input);
-      }
-    } catch (e) {}
-  }
-  // AM / PM session shortcuts beside the time fields
-  var ft = document.getElementById('tjFromTime');
-  if (ft && !document.getElementById('tjAmBtn')) {
-    var row = ft.parentElement;
-    var wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
-    [['tjAmBtn', 'AM session', '07:00', '10:00'],
-     ['tjPmBtn', 'PM session', '15:30', '18:30'],
-     ['tjClrBtn', 'Full day', '', '']].forEach(function(cfg) {
-      var b = document.createElement('button');
-      b.id = cfg[0]; b.className = 'btn btn-sm'; b.textContent = cfg[1];
-      b.style.flex = '1';
-      b.onclick = function() {
-        document.getElementById('tjFromTime').value = cfg[2];
-        document.getElementById('tjToTime').value = cfg[3];
-      };
-      wrap.appendChild(b);
-    });
-    row.parentElement.insertBefore(wrap, row.nextSibling);
-  }
+  // (v19) Legacy class pills and AM/PM shortcut buttons removed — class
+  // selection now lives ONLY in the #tjClassBox checkboxes and sessions in
+  // the #tjSession dropdown. Two generations of controls used to be built
+  // here, causing duplicate class selectors on non-UK class profiles.
 }
 
 async function tjLoadGates() {
@@ -166,10 +119,13 @@ document.addEventListener('DOMContentLoaded', function() {
               return '<label style="font-size:12px;display:flex;gap:4px;align-items:center;cursor:pointer;">' +
                 '<input type="checkbox" class="tjClassChk" value="' + c + '"> ' + c + '</label>';
             }).join('');
-          clsInput.parentElement.insertBefore(box, clsInput.parentElement.firstChild);
+          // Insert ABOVE the input row — inserting inside the flex row
+          // squeezed the Max/class field into an unreadable sliver
+          var row = clsInput.parentElement;
+          row.parentElement.insertBefore(box, row);
           clsInput.style.display = 'none';
-          var mx = document.getElementById('tjPerClass');
-          if (mx) mx.title = 'Declutter: randomly keep at most N tracks per class (e.g. 100 of 348 Cars). Blank = draw all.';
+          // Max/class input removed (v21): the automatic approach filter
+          // in trajectory_render.py already declutters with per-class floors
         }
       } catch (e) {}
     }
@@ -208,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
             !el.closest('#tjClassBox') && el.tagName !== 'OPTION') el.remove();
       });
     }
-    [900, 1800, 3000, 5000].forEach(function(ms) { setTimeout(tjSweepLegacy, ms); });
+    tjSweepLegacy();   // one pass; legacy builders removed at source in v19
 
     // Rebind the Generate button directly — markup onclick may still name
     // the old handler (which now resolves to canvas's drawing function)

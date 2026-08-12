@@ -89,6 +89,11 @@ def capture_and_store_background(traf_path, video_path):
         if not ok:
             return None
 
+        try:                              # remove camera OSD watermark
+            from app.core.osd_scrub import scrub_osd
+            frame = scrub_osd(frame)
+        except Exception as e:
+            log.warning(f"OSD scrub skipped: {e}")
         ok, png = cv2.imencode('.png', frame)
         if not ok:
             return None
@@ -118,7 +123,14 @@ def load_stored_background(traf_path_or_conn):
         if not row:
             return None
         buf = np.frombuffer(row[0], dtype=np.uint8)
-        return cv2.imdecode(buf, cv2.IMREAD_COLOR)
+        img = cv2.imdecode(buf, cv2.IMREAD_COLOR)
+        if img is not None:
+            try:                          # scrub OSD from backgrounds that
+                from app.core.osd_scrub import scrub_osd   # were stored before
+                img = scrub_osd(img)      # the scrubber existed
+            except Exception:
+                pass
+        return img
     finally:
         if own:
             conn.close()
