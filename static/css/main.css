@@ -183,6 +183,22 @@ h1, h2, h3, .stat-value, .frame-label {
   transition: border-color .12s;
 }
 .track-item:hover, .gate-item:hover { border-color: var(--border-strong); }
+.track-time {
+  font-family: 'Space Grotesk', monospace; font-size: 11px;
+  color: var(--text-secondary);
+}
+.track-del {
+  background: none; border: 1px solid transparent; border-radius: 4px;
+  color: var(--text-secondary); cursor: pointer; font-size: 12px;
+  padding: 1px 6px; margin-left: auto; float: right;
+  visibility: hidden;
+}
+.track-item:hover .track-time {
+  font-family: 'Space Grotesk', monospace; font-size: 11px;
+  color: var(--text-secondary);
+}
+.track-del { visibility: visible; }
+.track-del:hover { color: var(--red); border-color: var(--red); }
 .gate-header { display: flex; justify-content: space-between; align-items: center; }
 .gate-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
 .gate-count {
