@@ -103,6 +103,7 @@ def render(payload: dict = None):
             legend=bool(payload.get('legend', True)),
             legend_counts=bool(payload.get('legend_counts', True)),
             skip_stationary=bool(payload.get('skip_stationary', True)),
+            keep_frac=float(payload.get('keep_frac', 0.5)),
             background=bg_canvas,
             job_number=payload.get('job_number'),
             site_name=payload.get('site_name'),

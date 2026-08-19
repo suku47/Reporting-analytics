@@ -21,7 +21,9 @@ async function _generatePlotInner(autoPreview) {
       legend: document.getElementById('tjLegend').checked,
       legend_counts: (function(cb){ return cb ? cb.checked : true; })(
         document.getElementById('tjLegendCounts')),
-      skip_stationary: document.getElementById('tjSkipStat').checked
+      skip_stationary: document.getElementById('tjSkipStat').checked,
+      keep_frac: (function(sel){ return sel ? parseFloat(sel.value) : 0.5; })(
+        document.getElementById('tjKeepFrac'))
     };
     var picked = Array.prototype.map.call(
       document.querySelectorAll('.tjClassChk:checked'),
@@ -130,6 +132,21 @@ document.addEventListener('DOMContentLoaded', function() {
           // in trajectory_render.py already declutters with per-class floors
         }
       } catch (e) {}
+    }
+    // Declutter level: fraction of tracks kept in crowded approaches
+    var skipStat = document.getElementById('tjSkipStat');
+    if (skipStat && !document.getElementById('tjKeepFrac')) {
+      var kfWrap = document.createElement('div');
+      kfWrap.style.cssText = 'margin:6px 0;';
+      kfWrap.innerHTML = '<label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:2px;">Declutter (crowded approaches)</label>' +
+        '<select id="tjKeepFrac" class="text-input" style="width:100%;">' +
+        '<option value="0.3">Aggressive — keep 30%</option>' +
+        '<option value="0.5" selected>Standard — keep 50%</option>' +
+        '<option value="0.7">Light — keep 70%</option>' +
+        '<option value="1.0">Off — draw every track</option>' +
+        '</select>';
+      var anchor = skipStat.closest('div') || skipStat.parentElement;
+      anchor.parentElement.insertBefore(kfWrap, anchor.nextSibling);
     }
     var ft = document.getElementById('tjFromTime');
     if (ft && !document.getElementById('tjSession')) {
