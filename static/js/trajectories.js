@@ -19,6 +19,8 @@ async function _generatePlotInner(autoPreview) {
   try {
     var payload = {
       legend: document.getElementById('tjLegend').checked,
+      legend_counts: (function(cb){ return cb ? cb.checked : true; })(
+        document.getElementById('tjLegendCounts')),
       skip_stationary: document.getElementById('tjSkipStat').checked
     };
     var picked = Array.prototype.map.call(

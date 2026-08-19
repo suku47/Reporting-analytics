@@ -101,6 +101,7 @@ def render(payload: dict = None):
             per_class=payload.get('per_class'),
             thickness=int(payload.get('thickness', 1)),
             legend=bool(payload.get('legend', True)),
+            legend_counts=bool(payload.get('legend_counts', True)),
             skip_stationary=bool(payload.get('skip_stationary', True)),
             background=bg_canvas,
             job_number=payload.get('job_number'),

@@ -24,13 +24,14 @@ function applyFilters() {
   renderTrackList(filtered);
 }
 
-function renderTrackList(tracks) {
-  const el = document.getElementById('trackList');
-  if (!tracks.length) {
-    el.innerHTML = '<div class="loading">No tracks match filters</div>';
-    return;
-  }
-  el.innerHTML = tracks.slice(0, 2000).map(t => `
+// Chunked rendering: ALL tracks are shown, appended in chunks as the list
+// scrolls, so files with thousands of tracks don't freeze the sidebar.
+const TRACK_CHUNK = 500;
+let _tlFiltered = [];   // current filtered set being rendered
+let _tlRendered = 0;    // how many rows are in the DOM so far
+
+function _trackRowHTML(t) {
+  return `
     <div class="track-item ${selectedTrack === t.track_id ? 'selected' : ''}"
          onclick="selectTrack(${t.track_id})" title="${trackTimeTooltip(t)}">
       <span class="track-id">#${t.track_id}</span>
@@ -41,8 +42,46 @@ function renderTrackList(tracks) {
       <span class="track-speed">${t.speed_mean_px.toFixed(1)}</span>
       <button class="track-del" title="Delete track #${t.track_id}"
               onclick="deleteTrackFromList(event, ${t.track_id})">✕</button>
-    </div>
-  `).join('');
+    </div>`;
+}
+
+function _appendTrackChunk(el) {
+  if (_tlRendered >= _tlFiltered.length) return;
+  const next = _tlFiltered.slice(_tlRendered, _tlRendered + TRACK_CHUNK);
+  el.insertAdjacentHTML('beforeend', next.map(_trackRowHTML).join(''));
+  _tlRendered += next.length;
+  const more = _tlFiltered.length - _tlRendered;
+  let foot = document.getElementById('trackListFoot');
+  if (!foot) {
+    foot = document.createElement('div');
+    foot.id = 'trackListFoot';
+    foot.className = 'loading';
+    el.appendChild(foot);
+  }
+  el.appendChild(foot);  // keep footer at the bottom after appends
+  foot.textContent = more > 0
+    ? `Showing ${_tlRendered} of ${_tlFiltered.length} — scroll for more`
+    : `${_tlFiltered.length} tracks`;
+}
+
+function renderTrackList(tracks) {
+  const el = document.getElementById('trackList');
+  _tlFiltered = tracks;
+  _tlRendered = 0;
+  if (!tracks.length) {
+    el.innerHTML = '<div class="loading">No tracks match filters</div>';
+    return;
+  }
+  el.innerHTML = '';
+  _appendTrackChunk(el);
+  if (!el._chunkBound) {
+    el.addEventListener('scroll', () => {
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 300) {
+        _appendTrackChunk(el);
+      }
+    });
+    el._chunkBound = true;
+  }
 }
 
 // ── Track timing helpers ──

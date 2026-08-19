@@ -705,7 +705,7 @@ def draw_job_info(canvas, job_number=None, site_name=None):
     return canvas
 
 
-def draw_legend(canvas, drawn_by_class):
+def draw_legend(canvas, drawn_by_class, show_counts=True):
     """Draw a small color-coded legend in the top-left corner.
 
     Each entry is a colored dot followed by "Class (count)", e.g. "PV (430)".
@@ -748,7 +748,10 @@ def draw_legend(canvas, drawn_by_class):
 
     # Keep profile-list order (set in full_counts above); build labels.
     entries = list(full_counts.items())
-    labels = [f"{cls} ({cnt})" for cls, cnt in entries]
+    if show_counts:
+        labels = [f"{cls} ({cnt})" for cls, cnt in entries]
+    else:
+        labels = [cls for cls, _cnt in entries]
     text_widths = [
         cv2.getTextSize(lbl, font, font_scale, font_thickness)[0][0]
         for lbl in labels
@@ -810,7 +813,7 @@ def parse_class_list(s):
 
 def render_trajectory_plot(traf_path, video_path, out_path,
                            classes=None, per_class=None, min_points=10,
-                           skip_stationary=True, thickness=1, legend=True,
+                           skip_stationary=True, thickness=1, legend=True, legend_counts=True,
                            frame=0, seed=42, despike=True, despike_px=12.0,
                            smooth_sigma=2.0, trim_departing=6, keep_frac=0.7,
                            min_per_approach=15, protect_class_max=10,
@@ -886,7 +889,7 @@ def render_trajectory_plot(traf_path, video_path, out_path,
         canvas, trajectories, thickness, taper=taper, gradient=use_gradient)
 
     if legend:
-        canvas = draw_legend(canvas, file_class_counts)
+        canvas = draw_legend(canvas, file_class_counts, show_counts=legend_counts)
     canvas = draw_job_info(canvas, job_number=job_number, site_name=site_name)
 
     if jpg:

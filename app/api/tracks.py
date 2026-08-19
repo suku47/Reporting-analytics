@@ -8,7 +8,7 @@ router = APIRouter(tags=["tracks"])
 @router.get("/tracks")
 def get_tracks(class_name: str = None, stationary: int = None,
                min_quality: float = None, entry_edge: str = None,
-               exit_edge: str = None, limit: int = 5000):
+               exit_edge: str = None, limit: int = 200000):
     sql = "SELECT * FROM tracks WHERE 1=1"
     params = []
     if class_name:
