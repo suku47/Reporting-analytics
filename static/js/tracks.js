@@ -64,6 +64,22 @@ function _appendTrackChunk(el) {
     : `${_tlFiltered.length} tracks`;
 }
 
+// When a track is selected (e.g. clicked on the canvas), make sure its row
+// is actually rendered (appending chunks as needed for high track numbers)
+// and scroll the sidebar list to it, so it can be deleted without manually
+// scrolling thousands of rows.
+function _ensureSelectedVisible(el) {
+  const idx = _tlFiltered.findIndex(t => t.track_id === selectedTrack);
+  if (idx < 0) return;                      // filtered out — nothing to show
+  while (_tlRendered <= idx) {
+    const before = _tlRendered;
+    _appendTrackChunk(el);
+    if (_tlRendered === before) break;      // safety: no progress
+  }
+  const row = el.querySelectorAll('.track-item')[idx];
+  if (row) row.scrollIntoView({ block: 'center' });
+}
+
 function renderTrackList(tracks) {
   const el = document.getElementById('trackList');
   _tlFiltered = tracks;
@@ -74,6 +90,7 @@ function renderTrackList(tracks) {
   }
   el.innerHTML = '';
   _appendTrackChunk(el);
+  if (selectedTrack !== null) _ensureSelectedVisible(el);
   if (!el._chunkBound) {
     el.addEventListener('scroll', () => {
       if (el.scrollTop + el.clientHeight >= el.scrollHeight - 300) {
